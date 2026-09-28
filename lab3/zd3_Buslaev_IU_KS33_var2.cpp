@@ -438,8 +438,18 @@ int main() {
     cout << endl << "Исходный массив курсов:" << endl;
     printCourseArray(p_courses, size);
 
+    // Ввод критериев для рекомендаций
+    double min_rating;
+    double max_price;
+
+    cout << endl << "Введите минимальный рейтинг: ";
+    cin >> min_rating;
+
+    cout << "Введите максимальную стоимость: ";
+    cin >> max_price;
+
     cout << endl << " РЕКОМЕНДАЦИИ " << endl;
-    recommendCourses(p_courses, size, 4.0, 5000.0);
+    recommendCourses(p_courses, size, min_rating, max_price);
 
     cout << endl << " СРАВНЕНИЕ ПО ДЛИТЕЛЬНОСТИ " << endl;
     compareByDuration(p_courses, size);
