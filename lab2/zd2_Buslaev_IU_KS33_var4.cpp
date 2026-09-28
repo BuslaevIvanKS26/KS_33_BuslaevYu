@@ -1,3 +1,4 @@
+
 #include <iostream>
 #include <cstdlib>
 #include <ctime>
@@ -12,16 +13,17 @@ const int MAX_MATRIX_SIZE = 100;
 
 int readMatrixSize();
 int generateBrightness();
-int** createMatrix(int size);
-void fillMatrixRandom(int** p_matrix, int size);
-void fillMatrixManually(int** p_matrix, int size);
-void printMatrix(int** p_matrix, int size);
-void invertMatrix(int** p_matrix, int size);
-void binarizeMatrix(int** p_matrix, int size, int threshold);
-int findBrightestRow(int** p_matrix, int size);
+int* createMatrix(int size);
+void fillMatrixRandom(int* p_matrix, int size);
+void fillMatrixManually(int* p_matrix, int size);
+void printMatrix(const int* p_matrix, int size);
+void invertMatrix(int* p_matrix, int size);
+void binarizeMatrix(int* p_matrix, int size, int threshold);
+int findBrightestRow(const int* p_matrix, int size);
 void printMatrixViaVoid(void* p_void_matrix, int size);
-void deleteMatrix(int** p_matrix, int size);
+void deleteMatrix(int* p_matrix);
 int readOperationChoice();
+int readFillMode();
 int readThreshold();
 
 /**
@@ -31,9 +33,11 @@ int readThreshold();
  */
 int readMatrixSize() {
     int size = 0;
+
     while (true) {
         cout << "Введите размер матрицы N (1.." << MAX_MATRIX_SIZE << "): ";
         cin >> size;
+
         if (cin.fail() || size < 1 || size > MAX_MATRIX_SIZE) {
             cin.clear();
             cin.ignore(10000, '\n');
@@ -43,6 +47,7 @@ int readMatrixSize() {
             break;
         }
     }
+
     return size;
 }
 
@@ -53,20 +58,20 @@ int readMatrixSize() {
  */
 int generateBrightness() {
     int value = MIN_BRIGHTNESS + rand() % (MAX_BRIGHTNESS - MIN_BRIGHTNESS + 1);
+
     return value;
 }
 
 /**
  * Выделяет память под двумерный массив N x N в куче.
+ * Элементы хранятся в одном непрерывном массиве.
  *
  * @param size размер матрицы.
- * @return указатель на массив указателей (int**).
+ * @return указатель на массив целых чисел.
  */
-int** createMatrix(int size) {
-    int** p_matrix = new int*[size];
-    for (int i = 0; i < size; i++) {
-        p_matrix[i] = new int[size];
-    }
+int* createMatrix(int size) {
+    int* p_matrix = new int[size * size];
+
     return p_matrix;
 }
 
@@ -76,40 +81,43 @@ int** createMatrix(int size) {
  * @param p_matrix указатель на матрицу.
  * @param size размер матрицы.
  */
-void fillMatrixRandom(int** p_matrix, int size) {
+void fillMatrixRandom(int* p_matrix, int size) {
     for (int i = 0; i < size; i++) {
         for (int j = 0; j < size; j++) {
-            p_matrix[i][j] = generateBrightness();
+            p_matrix[i * size + j] = generateBrightness();
         }
     }
 }
 
 /**
  * Заполняет матрицу значениями, введёнными пользователем вручную.
- * Проверяет, что каждое значение в диапазоне от 0 до 255.
- * После ввода очищает буфер, чтобы лишние числа не попали в следующие команды.
+ * Проверяет, что каждое значение находится в диапазоне от 0 до 255.
  *
  * @param p_matrix указатель на матрицу.
  * @param size размер матрицы.
  */
-void fillMatrixManually(int** p_matrix, int size) {
+void fillMatrixManually(int* p_matrix, int size) {
     cout << "Введите " << size * size << " чисел (от 0 до 255):" << endl;
+
     for (int i = 0; i < size; i++) {
         for (int j = 0; j < size; j++) {
             int value = 0;
+
             while (true) {
                 cin >> value;
+
                 if (cin.fail() || value < MIN_BRIGHTNESS || value > MAX_BRIGHTNESS) {
                     cin.clear();
                     cin.ignore(10000, '\n');
                     cout << "Ошибка: число должно быть от 0 до 255. Повторите: ";
                 } else {
-                    p_matrix[i][j] = value;
+                    p_matrix[i * size + j] = value;
                     break;
                 }
             }
         }
     }
+
     cin.ignore(10000, '\n');
 }
 
@@ -119,11 +127,12 @@ void fillMatrixManually(int** p_matrix, int size) {
  * @param p_matrix указатель на матрицу.
  * @param size размер матрицы.
  */
-void printMatrix(int** p_matrix, int size) {
+void printMatrix(const int* p_matrix, int size) {
     for (int i = 0; i < size; i++) {
         for (int j = 0; j < size; j++) {
-            cout << p_matrix[i][j] << "\t";
+            cout << p_matrix[i * size + j] << "\t";
         }
+
         cout << endl;
     }
 }
@@ -134,10 +143,10 @@ void printMatrix(int** p_matrix, int size) {
  * @param p_matrix указатель на матрицу.
  * @param size размер матрицы.
  */
-void invertMatrix(int** p_matrix, int size) {
+void invertMatrix(int* p_matrix, int size) {
     for (int i = 0; i < size; i++) {
         for (int j = 0; j < size; j++) {
-            p_matrix[i][j] = MAX_BRIGHTNESS - p_matrix[i][j];
+            p_matrix[i * size + j] = MAX_BRIGHTNESS - p_matrix[i * size + j];
         }
     }
 }
@@ -150,13 +159,13 @@ void invertMatrix(int** p_matrix, int size) {
  * @param size размер матрицы.
  * @param threshold порог бинаризации.
  */
-void binarizeMatrix(int** p_matrix, int size, int threshold) {
+void binarizeMatrix(int* p_matrix, int size, int threshold) {
     for (int i = 0; i < size; i++) {
         for (int j = 0; j < size; j++) {
-            if (p_matrix[i][j] > threshold) {
-                p_matrix[i][j] = 1;
+            if (p_matrix[i * size + j] > threshold) {
+                p_matrix[i * size + j] = 1;
             } else {
-                p_matrix[i][j] = 0;
+                p_matrix[i * size + j] = 0;
             }
         }
     }
@@ -169,15 +178,17 @@ void binarizeMatrix(int** p_matrix, int size, int threshold) {
  * @param size размер матрицы.
  * @return индекс самой яркой строки (от 0 до size - 1).
  */
-int findBrightestRow(int** p_matrix, int size) {
+int findBrightestRow(const int* p_matrix, int size) {
     int brightest_index = 0;
-    long long max_sum = 0;
+    int max_sum = 0;
 
     for (int i = 0; i < size; i++) {
-        long long current_sum = 0;
+        int current_sum = 0;
+
         for (int j = 0; j < size; j++) {
-            current_sum += p_matrix[i][j];
+            current_sum += p_matrix[i * size + j];
         }
+
         if (i == 0 || current_sum > max_sum) {
             max_sum = current_sum;
             brightest_index = i;
@@ -188,53 +199,88 @@ int findBrightestRow(int** p_matrix, int size) {
 }
 
 /**
- * Выводит матрицу, переданную через void*, приведя её к int** внутри.
- * Демонстрирует работу с void-указателем.
+ * Выводит матрицу, переданную через void*,
+ * приводя указатель к int* внутри функции.
  *
  * @param p_void_matrix указатель на матрицу как void*.
  * @param size размер матрицы.
  */
 void printMatrixViaVoid(void* p_void_matrix, int size) {
-    int** p_matrix = (int**)p_void_matrix;
+    int* p_matrix = (int*)p_void_matrix;
+
     for (int i = 0; i < size; i++) {
         for (int j = 0; j < size; j++) {
-            cout << p_matrix[i][j] << "\t";
+            cout << p_matrix[i * size + j] << "\t";
         }
+
         cout << endl;
     }
 }
 
 /**
- * Освобождает память, выделенную под двумерный массив.
+ * Освобождает память, выделенную под матрицу.
  *
  * @param p_matrix указатель на матрицу.
- * @param size размер матрицы.
  */
-void deleteMatrix(int** p_matrix, int size) {
-    for (int i = 0; i < size; i++) {
-        delete[] p_matrix[i];
-    }
+void deleteMatrix(int* p_matrix) {
     delete[] p_matrix;
 }
 
 /**
- * Выводит меню действий и считывает выбор пользователя.
+ * Выводит меню действий и считывает выбор пользователя с проверкой.
  *
  * @return номер выбранного действия (1..4).
  */
 int readOperationChoice() {
-    cout << endl;
-    cout << "Выберите действие:" << endl;
-    cout << "1 - Инвертировать изображение (255 - x)" << endl;
-    cout << "2 - Бинаризовать изображение по порогу" << endl;
-    cout << "3 - Найти самую яркую строку" << endl;
-    cout << "4 - Вывести матрицу через void*" << endl;
-    cout << "Ваш выбор: ";
-
     int choice = 0;
-    cin >> choice;
-    cin.ignore(10000, '\n');
+
+    while (true) {
+        cout << endl;
+        cout << "Выберите действие:" << endl;
+        cout << "1 - Инвертировать изображение (255 - x)" << endl;
+        cout << "2 - Бинаризовать изображение по порогу" << endl;
+        cout << "3 - Найти самую яркую строку" << endl;
+        cout << "4 - Вывести матрицу через void*" << endl;
+        cout << "Ваш выбор: ";
+
+        cin >> choice;
+
+        if (cin.fail() || choice < 1 || choice > 4) {
+            cin.clear();
+            cin.ignore(10000, '\n');
+            cout << "Некорректный выбор. Введите число от 1 до 4." << endl;
+        } else {
+            cin.ignore(10000, '\n');
+            break;
+        }
+    }
+
     return choice;
+}
+
+/**
+ * Считывает способ заполнения матрицы с проверкой.
+ *
+ * @return 1 — случайное заполнение, 2 — ручной ввод.
+ */
+int readFillMode() {
+    int fill_mode = 0;
+
+    while (true) {
+        cout << "Заполнить матрицу случайно (1) или ввести вручную (2)? ";
+        cin >> fill_mode;
+
+        if (cin.fail() || (fill_mode != 1 && fill_mode != 2)) {
+            cin.clear();
+            cin.ignore(10000, '\n');
+            cout << "Некорректный выбор. Введите 1 или 2." << endl;
+        } else {
+            cin.ignore(10000, '\n');
+            break;
+        }
+    }
+
+    return fill_mode;
 }
 
 /**
@@ -244,9 +290,11 @@ int readOperationChoice() {
  */
 int readThreshold() {
     int threshold = 0;
+
     while (true) {
         cout << "Введите порог (0..255): ";
         cin >> threshold;
+
         if (cin.fail() || threshold < MIN_BRIGHTNESS || threshold > MAX_BRIGHTNESS) {
             cin.clear();
             cin.ignore(10000, '\n');
@@ -256,9 +304,15 @@ int readThreshold() {
             break;
         }
     }
+
     return threshold;
 }
 
+/**
+ * Выполняет основную последовательность работы программы.
+ *
+ * @return 0 при успешном завершении.
+ */
 int main() {
     srand((unsigned int)time(0));
 
@@ -266,49 +320,52 @@ int main() {
 
     int size = readMatrixSize();
 
-    int** matrix = createMatrix(size);
+    int* p_matrix = createMatrix(size);
 
-    cout << "Заполнить матрицу случайно (1) или ввести вручную (2)? ";
-    int fill_mode = 0;
-    cin >> fill_mode;
-    cin.ignore(10000, '\n');
+    int fill_mode = readFillMode();
 
     if (fill_mode == 1) {
-        fillMatrixRandom(matrix, size);
+        fillMatrixRandom(p_matrix, size);
     } else {
-        fillMatrixManually(matrix, size);
+        fillMatrixManually(p_matrix, size);
     }
 
     cout << endl << "Исходная матрица:" << endl;
-    printMatrix(matrix, size);
+    printMatrix(p_matrix, size);
 
     int choice = readOperationChoice();
 
     if (choice == 1) {
-        invertMatrix(matrix, size);
+        invertMatrix(p_matrix, size);
+
         cout << endl << "Инвертированная матрица:" << endl;
-        printMatrix(matrix, size);
+        printMatrix(p_matrix, size);
     } else if (choice == 2) {
         int threshold = readThreshold();
-        binarizeMatrix(matrix, size, threshold);
+
+        binarizeMatrix(p_matrix, size, threshold);
+
         cout << endl << "Бинаризованная матрица:" << endl;
-        printMatrix(matrix, size);
+        printMatrix(p_matrix, size);
     } else if (choice == 3) {
-        int brightest_index = findBrightestRow(matrix, size);
-        cout << endl << "Индекс самой яркой строки: " << brightest_index << endl;
+        int brightest_index = findBrightestRow(p_matrix, size);
+
+        cout << endl << "Индекс самой яркой строки: "
+             << brightest_index << endl;
+
         cout << "Значения строки: ";
+
         for (int j = 0; j < size; j++) {
-            cout << matrix[brightest_index][j] << " ";
+            cout << p_matrix[brightest_index * size + j] << " ";
         }
+
         cout << endl;
     } else if (choice == 4) {
         cout << endl << "Матрица через void*:" << endl;
-        printMatrixViaVoid(matrix, size);
-    } else {
-        cout << endl << "Неизвестная операция. Выход." << endl;
+        printMatrixViaVoid((void*)p_matrix, size);
     }
 
-    deleteMatrix(matrix, size);
+    deleteMatrix(p_matrix);
 
     return 0;
 }
