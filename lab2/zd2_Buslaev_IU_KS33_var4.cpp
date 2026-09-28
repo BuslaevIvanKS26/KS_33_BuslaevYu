@@ -8,7 +8,6 @@ using namespace std;
 
 const int MIN_BRIGHTNESS = 0;
 const int MAX_BRIGHTNESS = 255;
-const int DEFAULT_THRESHOLD = 128;
 const int MAX_MATRIX_SIZE = 100;
 
 int readMatrixSize();
